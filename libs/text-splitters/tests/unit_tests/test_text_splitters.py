@@ -1922,6 +1922,42 @@ def test_experimental_markdown_syntax_text_splitter() -> None:
     assert output == expected_output
 
 
+@pytest.mark.parametrize("fence", ["```", "~~~"])
+@pytest.mark.parametrize("newline", ["\n", "\r\n"])
+def test_experimental_markdown_many_code_blocks(fence: str, newline: str) -> None:
+    """Consuming code blocks must preserve following lines and their metadata."""
+    splitter = ExperimentalMarkdownSyntaxTextSplitter()
+    code = newline.join([f"{fence}python", "    value = 1", fence, ""])
+    block = f"# Section{newline}{code}after{newline}"
+
+    output = splitter.split_text(block * 1000)
+
+    expected = [
+        Document(
+            page_content=code,
+            metadata={"Header 1": "Section", "Code": "python"},
+        ),
+        Document(page_content=f"after{newline}", metadata={"Header 1": "Section"}),
+    ]
+    # Header matching retains the carriage return in CRLF input.
+    if newline == "\r\n":
+        for doc in expected:
+            doc.metadata["Header 1"] = "Section\r"
+        expected[0].metadata["Code"] = "python\r"
+    assert output == expected * 1000
+
+
+@pytest.mark.parametrize("fence", ["```", "~~~"])
+def test_experimental_markdown_unclosed_code_block(fence: str) -> None:
+    """An unclosed fence consumes the remaining lines without emitting a code chunk."""
+    splitter = ExperimentalMarkdownSyntaxTextSplitter()
+
+    assert splitter.split_text(f"before\n{fence}python\nunfinished") == [
+        Document(page_content="before\n")
+    ]
+    assert splitter.split_text("after") == [Document(page_content="after")]
+
+
 def test_experimental_markdown_syntax_text_splitter_header_configuration() -> None:
     """Test experimental markdown syntax splitter."""
     headers_to_split_on = [("#", "Encabezamiento 1")]

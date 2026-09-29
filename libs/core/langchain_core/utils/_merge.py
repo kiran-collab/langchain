@@ -123,9 +123,8 @@ def merge_lists(left: list[Any] | None, *others: list[Any] | None) -> list[Any] 
                         )
                     )
                 ):
-                    to_merge = [
-                        i
-                        for i, e_left in enumerate(merged)
+                    merge_index: int | None = None
+                    for i, e_left in enumerate(merged):
                         if (
                             isinstance(e_left, dict)
                             and "index" in e_left
@@ -135,12 +134,13 @@ def merge_lists(left: list[Any] | None, *others: list[Any] | None) -> list[Any] 
                                 or e.get("id") in {None, ""}
                                 or e_left.get("id") == e.get("id")
                             )
-                        )
-                    ]
-                    if to_merge:
+                        ):
+                            merge_index = i
+                            break
+                    if merge_index is not None:
                         # TODO: Remove this once merge_dict is updated with special
                         # handling for 'type'.
-                        if (left_type := merged[to_merge[0]].get("type")) and (
+                        if (left_type := merged[merge_index].get("type")) and (
                             e.get("type") == "non_standard" and "value" in e
                         ):
                             if left_type != "non_standard":
@@ -169,7 +169,7 @@ def merge_lists(left: list[Any] | None, *others: list[Any] | None) -> list[Any] 
                                 if "type" in e
                                 else e
                             )
-                        merged[to_merge[0]] = merge_dicts(merged[to_merge[0]], new_e)
+                        merged[merge_index] = merge_dicts(merged[merge_index], new_e)
                     else:
                         merged.append(e)
                 else:

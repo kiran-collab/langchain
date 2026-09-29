@@ -328,6 +328,26 @@ async def test_run_in_executor() -> None:
 class TestMergeMetadataDicts:
     """Tests for _merge_metadata_dicts `lc_versions` merge behavior."""
 
+    def test_without_versions_returns_independent_metadata(self) -> None:
+        base = {"user": "original", "nested": {"a": 1}}
+        incoming = {"user": "replacement", "request": "123"}
+
+        result = _merge_metadata_dicts(base, incoming)
+
+        assert result == {"user": "replacement", "nested": {"a": 1}, "request": "123"}
+        assert result["nested"] is base["nested"]
+        result["user"] = "changed"
+        assert base["user"] == "original"
+        assert incoming["user"] == "replacement"
+
+    @pytest.mark.parametrize("value", [None, False, 0, ""])
+    def test_falsy_versions_replace_existing_versions(self, value: Any) -> None:
+        base = {"lc_versions": {"pkg": "1.0"}}
+        incoming = {"lc_versions": value}
+
+        assert _merge_metadata_dicts(base, incoming) == incoming
+        assert base == {"lc_versions": {"pkg": "1.0"}}
+
     def test_lc_versions_preserves_both_nested_dicts(self) -> None:
         base = {"lc_versions": {"langchain-core": "0.3.1"}, "user_id": "abc"}
         incoming = {"lc_versions": {"langchain-anthropic": "1.3.3"}, "run": "x"}

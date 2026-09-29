@@ -443,6 +443,26 @@ def test_generation_chunk_addition_type_error() -> None:
             [{"index": 1, "b": "y"}],
             [{"index": 0, "a": "x"}, {"index": 1, "b": "y"}],
         ),
+        # Only the first compatible block is merged, even with duplicate indexes.
+        (
+            [
+                {"index": 0, "id": "other", "text": "skip"},
+                {"index": 0, "id": "match", "text": "first"},
+                {"index": 0, "id": "match", "text": "second"},
+            ],
+            [{"index": 0, "id": "match", "text": " chunk"}],
+            [
+                {"index": 0, "id": "other", "text": "skip"},
+                {"index": 0, "id": "match", "text": "first chunk"},
+                {"index": 0, "id": "match", "text": "second"},
+            ],
+        ),
+        # A match at position zero must not be treated as a missing match.
+        (
+            [{"index": 0, "text": "first"}, {"index": 0, "text": "second"}],
+            [{"index": 0, "text": " chunk"}],
+            [{"index": 0, "text": "first chunk"}, {"index": 0, "text": "second"}],
+        ),
         # Elements without index key
         (
             [{"no_index": "a"}],

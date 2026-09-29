@@ -417,6 +417,9 @@ def _merge_metadata_dicts(
         A new merged dict.
     """
     merged = {**base, **incoming}
+    # Most configs have no package versions; avoid mapping checks on this hot path.
+    if "lc_versions" not in merged:
+        return merged
     base_versions = base.get("lc_versions")
     incoming_versions = incoming.get("lc_versions")
     if isinstance(base_versions, Mapping) and isinstance(incoming_versions, Mapping):
